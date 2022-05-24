@@ -3,20 +3,22 @@
 #include<math.h>
 #include<time.h>
 
-#define MAX_GERACOES 1
+#define MAX_GERACOES 100
+#define CHANCE_MUTACAO 0.3
 
 #define FALSE 0
 #define TRUE 1
 
 int main()
 {   //declaracao e inicializacao
-    srand(time(0));
+    srand( (unsigned)time( NULL ) );
     long long int equacao;
     int a,b,c,d,e,f, vet_pop_inicial[10], x, melhor[2];
-    int maior = 0, menor = 0x7FFFFFFF;
+    int maior = 0;
     int melhores[10], m = 0;
-    double chances[10], maior_chance;
+    float chances[10], melhor_chance = 0.0;
     long long int eqs[10];
+    int mask = 0, pos = 1;
 
     char found = FALSE;
 
@@ -26,20 +28,23 @@ int main()
 
     //gerando populacao aleatoria (supondo n=10;
     for(int i=0; i<10; i++){
-        vet_pop_inicial[i] = rand() % 20;
-        printf("%d\n", vet_pop_inicial[i]);
+        vet_pop_inicial[i] = rand() % 50;
     }
-
-
-
 
     for (int i = 0; i < MAX_GERACOES && !found; i++) {
         m = 0;
         // Avaliar a população
         for(int j=0; j<10; j++){
+
+            if (vet_pop_inicial[j] < 0) {
+                vet_pop_inicial[j] *= -1;
+            }
+
+            printf("%d\n", vet_pop_inicial[j]);
+
             x = vet_pop_inicial[j];
 
-            equacao=a*pow(x,5)+b*pow(x,4)+c*pow(x,3)+d*pow(x,2)+e*x;
+            equacao=a*pow(x,5)+b*pow(x,4)+c*pow(x,3)+d*pow(x,2)+e*x+f;
 
             // se a solução é aceitável, sair pela janela
             if (equacao == 0) {
@@ -54,30 +59,27 @@ int main()
                 maior = equacao;
             }
 
-            if (equacao < menor) {
-                menor = equacao;
-            }
-
             eqs[j] = equacao;
         }
+        printf("\n\n");
 
-        //if (found) break;
+        if (found) break;
 
         for(int j=0; j < 10; j++){
             chances[j] = 1 - (((double)eqs[j]/1.01) / maior);
 
-            printf("%d -> %llf\n", eqs[j], chances[j]);
+            if (chances[j] > melhor_chance) {
+                melhor_chance = chances[j];
+                melhor[0] = vet_pop_inicial[j];
+                melhor[1] = i + 1;
+            }
         }
 
-        printf("\n\n");
-
-        for (int j = 0; j < 6; j++) {
-            int rng = rand() % (maior + 1 - menor) + menor;
-            double choose = 1 - ((double)rng / maior);
+        for (int j = 0; j < 5; j++) {
+            float choose = (float)rand()/RAND_MAX;
 
             for (int k = 0; k < 10; k++) {
                 if (choose < chances[k] && chances[k] != 0) {
-                    printf("%d -> %f\n", vet_pop_inicial[k], chances[k]);
                     melhores[m++] = vet_pop_inicial[k];
                     chances[k] = 0;
                     break;
@@ -85,7 +87,7 @@ int main()
             }
         }
 
-        for (int j = 0; j < 10; j++) {
+        for (int j = 0; j < 6; j++) {
             if (chances[j] != 0) {
                 melhores[m++] = chances[j];
             }
@@ -93,14 +95,28 @@ int main()
 
         //Cruzamento
 
-        printf("\n");
-
-        for (int j = 0; j < 9; j+=2) {
+        for (int j = 0; j < 5; j+=2) {
             vet_pop_inicial[j] = (melhores[j] & 0xFFFF0000) ^ (melhores[j + 1] & 0x0000FFFF);
             vet_pop_inicial[j+1] = (melhores[j] & 0x0000FFFF) ^ (melhores[j + 1] & 0xFFFF0000);
+        }
 
-            printf("%d\n", vet_pop_inicial[j]);
-            printf("%d\n", vet_pop_inicial[j+1]);
+
+        // Mutacao
+        for (int j = 0; j < 10; j++) {
+            pos = 1;
+            mask = 0;
+            for (int k = 0; k < 8; k++) {
+                float choose = (float)rand()/RAND_MAX;
+
+                if (choose < CHANCE_MUTACAO) {
+                    mask += 1 * pos;
+                } else {
+                    mask += 0 * pos;
+                }
+
+                pos *= 2;
+            }
+            vet_pop_inicial[j] = vet_pop_inicial[j] ^ mask;
         }
     }
 
